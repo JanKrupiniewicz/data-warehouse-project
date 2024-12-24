@@ -1,0 +1,136 @@
+-- 1.
+-- This query retrieves the top 5 students with the highest average grade in the subject "Informatyka" for test scores.
+SELECT 
+    {[Measures].[SredniaWartoscOcen]} ON COLUMNS,
+    ORDER(
+        TOPCOUNT([Uczen].[Nazwisko Imie].Members, 5, [Measures].[SredniaWartoscOcen]), 
+        [Measures].[SredniaWartoscOcen], 
+        DESC
+    ) ON ROWS
+FROM [HD Etap 4]
+WHERE ([Nauczyciel].[Przedmiot].&[Informatyka], [Junk].[Rodzaj Oceny].&[Sprawdzian])
+
+
+-- 2.
+-- This query retrieves the average grade by semester for the year 2024.
+SELECT 
+    {[Measures].[SredniaWartoscOcen]} ON COLUMNS, 
+    Descendants([Data Wystawienia].[Polrocze], [Data Wystawienia].[2024]) ON ROWS 
+FROM [HD Etap 4]
+
+-- 3.
+-- This query retrieves the average grade grouped by month.
+SELECT 
+    {[Measures].[SredniaWartoscOcen]} ON COLUMNS, 
+    [Data Wystawienia].[Hierarchy].[Miesiac].MEMBERS ON ROWS 
+FROM [HD Etap 4]
+
+
+-- 4.
+-- This query retrieves the count and average grade for each combination of grade type and room type, filtered by students currently enrolled.
+SELECT
+    {[Measures].[Liczba wystawionych ocen], [Measures].[SredniaWartoscOcen]} ON COLUMNS,
+    CROSSJOIN(
+        [Junk].[Rodzaj Oceny].MEMBERS,
+        [Sala].[Rodzaj Sali].MEMBERS
+    ) ON ROWS
+FROM [HD Etap 4]
+WHERE [Uczen].[Is Current].&[True]
+
+
+-- 5.
+-- This query retrieves the count and average grade for each combination of year and subject, excluding empty results.
+SELECT 
+    {[Measures].[Liczba wystawionych ocen], [Measures].[SredniaWartoscOcen]} ON COLUMNS,
+    NONEMPTYCROSSJOIN(
+		[Data Wystawienia].[Rok].MEMBERS,
+        [Nauczyciel].[Przedmiot].MEMBERS
+    ) ON ROWS
+FROM [HD Etap 4]
+
+
+-- 6.
+-- This query retrieves the average grade grouped by grade type for the year 2024.
+SELECT 
+    {[Measures].[SredniaWartoscOcen]} ON COLUMNS,
+    [Junk].[Rodzaj Oceny].MEMBERS ON ROWS
+FROM [HD Etap 4]
+WHERE [Data Wystawienia].[Rok].&[2024]
+ 
+
+-- 7.
+-- This query retrieves the count and average grade grouped by teacher academic degree.
+SELECT 
+    {[Measures].[Liczba wystawionych ocen], [Measures].[SredniaWartoscOcen]} ON COLUMNS,
+    [Nauczyciel].[Stopien Naukowy].MEMBERS ON ROWS
+FROM [HD Etap 4]
+
+
+-- 8.
+-- This query retrieves the average grade grouped by semester.
+SELECT 
+    {[Measures].[SredniaWartoscOcen]} ON COLUMNS,
+    [Data Wystawienia].[Polrocze].MEMBERS ON ROWS
+FROM [HD Etap 4]
+
+
+-- 9.
+-- This query retrieves the top 5 teachers who issued the most grades.
+SELECT 
+    {[Measures].[Liczba wystawionych ocen]} ON COLUMNS,
+    TOPCOUNT(
+        [Nauczyciel].[Nazwisko Imie].MEMBERS, 
+        5, 
+        [Measures].[Liczba wystawionych ocen]
+    ) ON ROWS
+FROM [HD Etap 4]
+
+
+-- 10.
+-- This query calculates the difference in grades issued between 2024 and 2023.
+WITH 
+    MEMBER [Data Wystawienia].[Rok].[Diff] AS 
+        '[Data Wystawienia].[Rok].&[2024] - [Data Wystawienia].[Rok].&[2023]'
+SELECT 
+    {
+        [Data Wystawienia].[Rok].&[2024], 
+        [Data Wystawienia].[Rok].&[2023], 
+        [Data Wystawienia].[Rok].[Diff]
+    } ON COLUMNS,
+    [Measures].MEMBERS ON ROWS
+FROM [HD Etap 4]
+
+-- 11.
+-- Filter Students with Grades Above the Median
+SELECT 
+    {[Measures].[SredniaWartoscOcen]} ON COLUMNS,
+    FILTER(
+        [Uczen].[Nazwisko Imie].Members,
+        [Measures].[SredniaWartoscOcen] > MEDIAN([Uczen].[Nazwisko Imie].Members, [Measures].[SredniaWartoscOcen])
+    ) ON ROWS
+FROM [HD Etap 4]
+WHERE ([Junk].[Rodzaj Oceny].&[Sprawdzian])
+
+
+-- 12.
+-- Find students with grades between 2.0 and 5.0 and count the total number of such students.
+WITH MEMBER [Measures].[CountInRange] AS
+    COUNT(
+        FILTER(
+            [Uczen].[Nazwisko Imie].Members,
+            [Measures].[SredniaWartoscOcen] >= 3.0 AND [Measures].[SredniaWartoscOcen] <= 5.0
+        )
+    )
+
+SELECT 
+    {[Measures].[CountInRange]} ON COLUMNS
+FROM [HD Etap 4]
+WHERE ([Nauczyciel].[Przedmiot].&[Biologia])
+
+
+-- 13.
+-- This query retrives the average grade per subject
+SELECT 
+    {[Measures].[SredniaWartoscOcen]} ON COLUMNS, 
+    {ORDER([Nauczyciel].[Przedmiot].MEMBERS, [Measures].[SredniaWartoscOcen], DESC)} ON ROWS 
+FROM [HD Etap 4]
